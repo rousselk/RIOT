@@ -73,6 +73,44 @@ static inline uint32_t choose_backoff_period(int be)
 }
 
 
+/**
+ * @brief Perform a CCA and send the given packet if medium is available
+ *
+ * @param[in] device    netdev device, needs to be already initialized
+ * @param[in] data      pointer to the data in the packet buffer
+ *
+ * @return              the return value of device driver's @c send_data()
+ *                      function if medium was avilable
+ * @return              -EBUSY if radio medium was not available
+ *                      to send the given data
+ */
+static int send_if_cca(gnrc_netdev_t *device, gnrc_pktsnip_t *data)
+{
+    netopt_enable_t hwfeat;
+
+    /* perform a CCA */
+    DEBUG("Checking radio medium availability...\n");
+    int res = device->driver->get(dev,
+                                  NETOPT_IS_CHANNEL_CLR,
+                                  (void *) &hwfeat,
+                                  sizeof(netopt_enable_t));
+    if (res < 0) {
+        /* normally impossible: we got a big internal problem! */
+        DEBUG("!!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
+        return -ECANCELED;
+    }
+
+    /* if medium is clear, send the packet and return */
+    if (hwfeat == NETOPT_ENABLE) {
+        DEBUG("Radio medium available: sending packet.\n");
+        return dev->driver->send_data(device, data);
+    }
+
+    /* if we arrive here, medium was not available for transmission */
+    DEBUG("Radio medium busy.\n");
+    return -EBUSY;
+}
+
 /*------------------------- "EXPORTED" FUNCTIONS -------------------------*/
 
 void set_csma_mac_min_be(uint8_t val)
@@ -111,6 +149,7 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
         break;
     case -EOVERFLOW:  /* (normally impossible...*/
     case -ECANCELED:
+        DEBUG("!!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
         /* internal driver error! */
         return -ECANCELED;
     default:
@@ -135,30 +174,24 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
         uint32_t bp = choose_backoff_period(be);
         xtimer_usleep(bp);
 
-        /* perform a CCA */
-        DEBUG("Checking radio medium availability...\n");
-        res = dev->driver->get(dev,
-                               NETOPT_IS_CHANNEL_CLR,
-                               (void *) &hwfeat,
-                               sizeof(netopt_enable_t));
-        if (res < 0) {
-            /* normally impossible: we got a big internal problem! */
-            return -ECANCELED;
+        /* try to send after a CCA */
+        res = send_if_cca(dev, pkt);
+        if (res >= 0) {
+            /* TX done */
+            return res;
+        } else if (res != -EBUSY) {
+            /* something has gone wrong, return the error code */
+            return res;
         }
 
-        /* if medium is clear, send the packet and return */
-        if (hwfeat == NETOPT_ENABLE) {
-            DEBUG("Radio medium available: sending packet.\n");
-            return dev->driver->send_data(dev, pktsnip);
-        }
-
-        /* increment CSMA counters */
+        /* medium is busy: increment CSMA counters */
         DEBUG("Radio medium busy.\n");
         be++;
         if (be > macMaxBE) {
             be = macMaxBE;
         }
         nb++;
+        /* ... and try again if we have no exceeded the retry limit */
     }
 
     /* if we arrive here, medium was never available for transmission */
@@ -188,6 +221,7 @@ int cca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
     case -EOVERFLOW:  /* (normally impossible...*/
     case -ECANCELED:
         /* internal driver error! */
+        DEBUG("!!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
         return -ECANCELED;
     default:
         ok = (hwfeat == NETOPT_ENABLE);
@@ -201,24 +235,11 @@ int cca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
 
     /* if we arrive here, we must do CCA ourselves ro see if radio medium
        is clear before sending */
-    DEBUG("Checking radio medium availability...\n");
-    res = dev->driver->get(dev,
-                           NETOPT_IS_CHANNEL_CLR,
-                           (void *) &hwfeat,
-                           sizeof(netopt_enable_t));
-    if (res < 0) {
-        /* normally impossible: we got a big internal problem! */
-        return -ECANCELED;
+    res = send_if_cca(dev, pkt);
+    if (res == -EBUSY) {
+        DEBUG("Transmission cancelled!\n");
     }
 
-    /* if medium is clear, send the packet and return */
-    if (hwfeat == NETOPT_ENABLE) {
-        DEBUG("Radio medium available: sending packet.\n");
-        return dev->driver->send_data(dev, pktsnip);
-    }
-
-    /* if we arrive here, medium was not available for transmission */
-    DEBUG("Radio medium busy: transmission cancelled.\n");
-    return -EBUSY;
+    return res;
 }
 
