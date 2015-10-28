@@ -82,6 +82,7 @@ static void _set_usage(char *cmd_name)
          "       * \"channel\" - sets the frequency channel\n"
          "       * \"chan\" - alias for \"channel\"\n"
          "       * \"csma_retries\" - set max. number of channel access attempts\n"
+         "       * \"cca_threshold\" - set ED threshold during CCA in dBm\n"
          "       * \"nid\" - sets the network identifier (or the PAN ID)\n"
          "       * \"pan\" - alias for \"nid\"\n"
          "       * \"pan_id\" - alias for \"nid\"\n"
@@ -97,7 +98,7 @@ static void _mtu_usage(char *cmd_name)
 
 static void _flag_usage(char *cmd_name)
 {
-    printf("usage: %s <if_id> [-]{promisc|autoack|csma|autocca|preload|iphc}\n", cmd_name);
+    printf("usage: %s <if_id> [-]{promisc|autoack|csma|autocca|cca_threshold|preload|iphc}\n", cmd_name);
 }
 
 static void _add_usage(char *cmd_name)
@@ -143,6 +144,10 @@ static void _print_netopt(netopt_t opt)
             printf("CSMA retries");
             break;
 
+        case NETOPT_CCA_THRESHOLD:
+            printf("CCA threshold [in dBm]");
+            break;
+        
         default:
             /* we don't serve these options here */
             break;
@@ -556,6 +561,9 @@ static int _netif_set(char *cmd_name, kernel_pid_t dev, char *key, char *value)
     }
     else if (strcmp("csma_retries", key) == 0) {
         return _netif_set_u8(dev, NETOPT_CSMA_RETRIES, value);
+    }
+    else if (strcmp("cca_threshold", key) == 0) {
+        return _netif_set_u8(dev, NETOPT_CCA_THRESHOLD, value);
     }
 
     _set_usage(cmd_name);
