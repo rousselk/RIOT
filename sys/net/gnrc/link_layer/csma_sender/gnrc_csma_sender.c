@@ -62,7 +62,7 @@ static inline uint32_t choose_backoff_period(int be)
     if (be > mac_max_be) {
         be = mac_max_be;
     }
-    uint32_t max_backoff = ((1 << be) - 1) * A_UNIT_BACKOFF_PERIOD_uS;
+    uint32_t max_backoff = ((1 << be) - 1) * A_UNIT_BACKOFF_PERIOD_MICROSEC;
 
     uint32_t period = genrand_uint32() % max_backoff;
     if (period < A_UNIT_BACKOFF_PERIOD_MICROSEC) {
