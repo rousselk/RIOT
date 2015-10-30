@@ -89,25 +89,25 @@ static int send_if_cca(gnrc_netdev_t *device, gnrc_pktsnip_t *data)
     netopt_enable_t hwfeat;
 
     /* perform a CCA */
-    DEBUG("Checking radio medium availability...\n");
+    DEBUG("csma: Checking radio medium availability...\n");
     int res = device->driver->get(dev,
                                   NETOPT_IS_CHANNEL_CLR,
                                   (void *) &hwfeat,
                                   sizeof(netopt_enable_t));
     if (res < 0) {
         /* normally impossible: we got a big internal problem! */
-        DEBUG("!!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
+        DEBUG("csma: !!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
         return -ECANCELED;
     }
 
     /* if medium is clear, send the packet and return */
     if (hwfeat == NETOPT_ENABLE) {
-        DEBUG("Radio medium available: sending packet.\n");
+        DEBUG("csma: Radio medium available: sending packet.\n");
         return dev->driver->send_data(device, data);
     }
 
     /* if we arrive here, medium was not available for transmission */
-    DEBUG("Radio medium busy.\n");
+    DEBUG("csma: Radio medium busy.\n");
     return -EBUSY;
 }
 
@@ -148,7 +148,7 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
         break;
     case -EOVERFLOW:  /* (normally impossible...*/
     case -ECANCELED:
-        DEBUG("!!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
+        DEBUG("csma: !!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
         /* internal driver error! */
         return -ECANCELED;
     default:
@@ -157,14 +157,14 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
 
     if (ok) {
         /* device does CSMA/CA all by itself: let it do its job */
-        DEBUG("Network device does hardware CSMA/CA\n");
+        DEBUG("csma: Network device does hardware CSMA/CA\n");
         return dev->driver->send_data(dev, pktsnip);
     }
 
     /* if we arrive here, then we must perform the CSMA/CA procedure
        ourselves by software */
     genrand_init(xtimer_now());
-    DEBUG("Starting software CSMA/CA....\n");
+    DEBUG("csma: Starting software CSMA/CA....\n");
 
     int nb = 0, be = mac_min_be;
 
@@ -184,7 +184,7 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
         }
 
         /* medium is busy: increment CSMA counters */
-        DEBUG("Radio medium busy.\n");
+        DEBUG("csma: Radio medium busy.\n");
         be++;
         if (be > mac_max_be) {
             be = mac_max_be;
@@ -194,7 +194,7 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
     }
 
     /* if we arrive here, medium was never available for transmission */
-    DEBUG("Software CSMA/CA failure: medium never available.\n");
+    DEBUG("csma: Software CSMA/CA failure: medium never available.\n");
     return -EBUSY;
 }
 
@@ -215,12 +215,11 @@ int cca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
         return -ENODEV;
     case -ENOTSUP:
         /* device doesn't make auto-CCA */
-        ok = false;
         break;
     case -EOVERFLOW:  /* (normally impossible...*/
     case -ECANCELED:
         /* internal driver error! */
-        DEBUG("!!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
+        DEBUG("csma: !!! DEVICE DRIVER FAILURE! TRANSMISSION ABORTED!\n");
         return -ECANCELED;
     default:
         ok = (hwfeat == NETOPT_ENABLE);
@@ -228,7 +227,7 @@ int cca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
 
     if (ok) {
         /* device does auto-CCA: let him do its job */
-        DEBUG("Network device does auto-CCA checking.\n");
+        DEBUG("csma: Network device does auto-CCA checking.\n");
         return dev->driver->send_data(dev, pktsnip);
     }
 
@@ -236,7 +235,7 @@ int cca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
        is clear before sending */
     res = send_if_cca(dev, pkt);
     if (res == -EBUSY) {
-        DEBUG("Transmission cancelled!\n");
+        DEBUG("csma: Transmission cancelled!\n");
     }
 
     return res;
