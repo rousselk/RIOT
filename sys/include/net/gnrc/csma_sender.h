@@ -7,11 +7,11 @@
  */
 
 /**
- * @defgroup    net_gnrc_csma_sender  Helper inerface to send packets via CSMA/CA
+ * @defgroup    net_gnrc_csma_sender  Helper interface to send packets via CSMA/CA
  * @ingroup     net_gnrc
  * @brief       This interface allows code from layer 2 (MAC) or higher
  *              to send packets with CSMA/CA, whatever the abilities and/or
- *              coniguration of a iven radio transceiver device.
+ *              configuration of a given radio transceiver device are.
  * @{
  *
  * @file
@@ -35,24 +35,23 @@ extern "C" {
 /**
  * @brief Default Minimal CSMA/CA Backoff Exponent 
  */
-#define MAC_MIN_BE_DEFAULT              (3U)
+#define MAC_MIN_BE_DEFAULT               (3U)
 
 /**
  * @brief Default Maximal CSMA/CA Backoff Exponent 
  */
-#define MAC_MAX_BE_DEFAULT              (5U)
+#define MAC_MAX_BE_DEFAULT               (5U)
 
 /**
  * @brief Default Maximal number of retries for sending
  *        a given packet with the CSMA/CA method
  */
-#define MAC_MAX_CSMA_BACKOFFS_DEFAULT   (4U)
+#define MAC_MAX_CSMA_BACKOFFS_DEFAULT    (4U)
 
 /**
  * @brief CSMA/CA backoff period, in microseconds
  */
-#define A_UNIT_BACKOFF_PERIOD_uS      (320U)
-
+#define A_UNIT_BACKOFF_PERIOD_MICROSEC   (320U)
 
 /**
  * @brief Define a different (non-standard) value for
@@ -78,12 +77,11 @@ void set_csma_mac_max_be(uint8_t val);
  */
 void set_csma_mac_max_csma_backoffs(uint8_t val);
 
-
 /**
  * @brief   Sends a packet using the CSMA/CA method
  *
  * If the transceiver can (and is configured to) do hardware-assisted
- * CSMA/CA, this feture is used. Otherwise, a software procedure is used.
+ * CSMA/CA, this feature is used. Otherwise, a software procedure is used.
  *
  * @param[in] dev       netdev device, needs to be already initialized
  * @param[in] pkt       pointer to the data in the packet buffer
@@ -102,12 +100,12 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
 /**
  * @brief   Sends a packet when medium is avaiable.
  *
- * This function is useful for ending packets without the whole CSMA/CA
+ * This function is useful for sending packets without the whole CSMA/CA
  * procedure, but *after* ensuring medium is available, that is :
  * after a successful CCA. <br/>
  * It is especially useful for broadcasting specific packets,
  * like beacons; or for many sending packets in burst. <br/>
- * ATTENTION: It only try to send the given data once. If you want the
+ * ATTENTION: It only tries to send the given data once. If you want the
  * complete CSMA/CA procedure with retries, use @c csma_ca_send().
  *
  * @param[in] dev       netdev device, needs to be already initialized

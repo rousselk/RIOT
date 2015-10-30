@@ -34,14 +34,14 @@
 #endif
 
 
-/** @brief Current value for macMinBE parameter */
-static uint8_t macMinBE = MAC_MIN_BE_DEFAULT;
+/** @brief Current value for mac_min_be parameter */
+static uint8_t mac_min_be = MAC_MIN_BE_DEFAULT;
 
-/** @brief Current value for macMaxBE parameter */
-static uint8_t macMaxBE = MAC_MAX_BE_DEFAULT;
+/** @brief Current value for mac_max_be parameter */
+static uint8_t mac_max_be = MAC_MAX_BE_DEFAULT;
 
-/** @brief Current value for macMaxCSMABackoffs parameter */
-static uint8_t macMaxCSMABackoffs = MAC_MAX_CSMA_BACKOFFS_DEFAULT;
+/** @brief Current value for mac_max_csma_backoffs parameter */
+static uint8_t mac_max_csma_backoffs = MAC_MAX_CSMA_BACKOFFS_DEFAULT;
 
 
 /*--------------------- "INTERNAL" UTILITY FUNCTIONS ---------------------*/
@@ -56,17 +56,17 @@ static uint8_t macMaxCSMABackoffs = MAC_MAX_CSMA_BACKOFFS_DEFAULT;
  */
 static inline uint32_t choose_backoff_period(int be)
 {
-    if (be < macMinBE) {
-        be = macMinBE;
+    if (be < mac_min_be) {
+        be = mac_min_be;
     }
-    if (be > macMaxBE) {
-        be = macMaxBE;
+    if (be > mac_max_be) {
+        be = mac_max_be;
     }
     uint32_t max_backoff = ((1 << be) - 1) * A_UNIT_BACKOFF_PERIOD_uS;
 
     uint32_t period = genrand_uint32() % max_backoff;
-    if (period < A_UNIT_BACKOFF_PERIOD_uS) {
-        period = A_UNIT_BACKOFF_PERIOD_uS;
+    if (period < A_UNIT_BACKOFF_PERIOD_MICROSEC) {
+        period = A_UNIT_BACKOFF_PERIOD_MICROSEC;
     }
 
     return period;
@@ -115,17 +115,17 @@ static int send_if_cca(gnrc_netdev_t *device, gnrc_pktsnip_t *data)
 
 void set_csma_mac_min_be(uint8_t val)
 {
-    macMinBE = val;
+    mac_min_be = val;
 }
 
 void set_csma_mac_max_be(uint8_t val)
 {
-    macMaxBE = val;
+    mac_max_be = val;
 }
 
 void set_csma_mac_max_csma_backoffs(uint8_t val);
 {
-    macMaxCSMABackoffs = val;
+    mac_max_csma_backoffs = val;
 }
 
 
@@ -145,7 +145,6 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
         return -ENODEV;
     case -ENOTSUP:
         /* device doesn't make auto-CSMA/CA */
-        ok = false;
         break;
     case -EOVERFLOW:  /* (normally impossible...*/
     case -ECANCELED:
@@ -167,9 +166,9 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
     genrand_init(xtimer_now());
     DEBUG("Starting software CSMA/CA....\n");
 
-    int nb = 0, be = macMinBE;
+    int nb = 0, be = mac_min_be;
 
-    while (nb <= macMaxCSMABackoffs) {
+    while (nb <= mac_max_csma_backoffs) {
         /* delay for an adequate random backoff period */
         uint32_t bp = choose_backoff_period(be);
         xtimer_usleep(bp);
@@ -187,8 +186,8 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
         /* medium is busy: increment CSMA counters */
         DEBUG("Radio medium busy.\n");
         be++;
-        if (be > macMaxBE) {
-            be = macMaxBE;
+        if (be > mac_max_be) {
+            be = mac_max_be;
         }
         nb++;
         /* ... and try again if we have no exceeded the retry limit */
@@ -233,7 +232,7 @@ int cca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
         return dev->driver->send_data(dev, pktsnip);
     }
 
-    /* if we arrive here, we must do CCA ourselves ro see if radio medium
+    /* if we arrive here, we must do CCA ourselves to see if radio medium
        is clear before sending */
     res = send_if_cca(dev, pkt);
     if (res == -EBUSY) {
