@@ -77,10 +77,13 @@ static inline uint32_t choose_backoff_period(int be)
  * @brief Perform a CCA and send the given packet if medium is available
  *
  * @param[in] device    netdev device, needs to be already initialized
- * @param[in] data      pointer to the data in the packet buffer
+ * @param[in] data      pointer to the data in the packet buffer;
+ *                      it must be a complete 802.15.4-compliant frame,
+ *                      ready to be sent to the radio transceiver
  *
  * @return              the return value of device driver's @c send_data()
  *                      function if medium was avilable
+ * @return              -ECANCELED if an internal driver error occured
  * @return              -EBUSY if radio medium was not available
  *                      to send the given data
  */

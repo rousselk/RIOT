@@ -78,13 +78,15 @@ void set_csma_mac_max_be(uint8_t val);
 void set_csma_mac_max_csma_backoffs(uint8_t val);
 
 /**
- * @brief   Sends a packet using the CSMA/CA method
+ * @brief   Sends a 802.15.4 frame using the CSMA/CA method
  *
  * If the transceiver can (and is configured to) do hardware-assisted
  * CSMA/CA, this feature is used. Otherwise, a software procedure is used.
  *
  * @param[in] dev       netdev device, needs to be already initialized
- * @param[in] pkt       pointer to the data in the packet buffer
+ * @param[in] pkt       pointer to the data in the packet buffer;
+ *                      it must be a complete 802.15.4-compliant frame,
+ *                      ready to be sent to the radio transceiver
  *
  * @return              number of bytes that were actually send out
  * @return              -ENODEV if @p dev is invalid
@@ -98,7 +100,7 @@ void set_csma_mac_max_csma_backoffs(uint8_t val);
 int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
 
 /**
- * @brief   Sends a packet when medium is avaiable.
+ * @brief   Sends a 802.15.4 frame when medium is avaiable.
  *
  * This function is useful for sending packets without the whole CSMA/CA
  * procedure, but *after* ensuring medium is available, that is :
@@ -109,7 +111,9 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
  * complete CSMA/CA procedure with retries, use @c csma_ca_send().
  *
  * @param[in] dev       netdev device, needs to be already initialized
- * @param[in] pkt       pointer to the data in the packet buffer
+ * @param[in] pkt       pointer to the data in the packet buffer;
+ *                      it must be a complete 802.15.4-compliant frame,
+ *                      ready to be sent to the radio transceiver
  *
  * @return              number of bytes that were actually send out
  * @return              -ENODEV if @p dev is invalid
