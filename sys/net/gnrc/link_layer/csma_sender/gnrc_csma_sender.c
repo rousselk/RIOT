@@ -21,6 +21,7 @@
 
 #include "kernel.h"
 #include "xtimer.h"
+#include "random.h"
 #include "net/gnrc/csma_sender.h"
 #include "net/gnrc.h"
 #include "net/netopt.h"
@@ -93,7 +94,7 @@ static int send_if_cca(gnrc_netdev_t *device, gnrc_pktsnip_t *data)
 
     /* perform a CCA */
     DEBUG("csma: Checking radio medium availability...\n");
-    int res = device->driver->get(dev,
+    int res = device->driver->get(device,
                                   NETOPT_IS_CHANNEL_CLR,
                                   (void *) &hwfeat,
                                   sizeof(netopt_enable_t));
@@ -106,7 +107,7 @@ static int send_if_cca(gnrc_netdev_t *device, gnrc_pktsnip_t *data)
     /* if medium is clear, send the packet and return */
     if (hwfeat == NETOPT_ENABLE) {
         DEBUG("csma: Radio medium available: sending packet.\n");
-        return dev->driver->send_data(device, data);
+        return device->driver->send_data(device, data);
     }
 
     /* if we arrive here, medium was not available for transmission */
@@ -126,13 +127,13 @@ void set_csma_mac_max_be(uint8_t val)
     mac_max_be = val;
 }
 
-void set_csma_mac_max_csma_backoffs(uint8_t val);
+void set_csma_mac_max_csma_backoffs(uint8_t val)
 {
     mac_max_csma_backoffs = val;
 }
 
 
-int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
+int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
 {
     netopt_enable_t hwfeat;
 
@@ -161,7 +162,7 @@ int csma_ca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt);
     if (ok) {
         /* device does CSMA/CA all by itself: let it do its job */
         DEBUG("csma: Network device does hardware CSMA/CA\n");
-        return dev->driver->send_data(dev, pktsnip);
+        return dev->driver->send_data(dev, pkt);
     }
 
     /* if we arrive here, then we must perform the CSMA/CA procedure
@@ -231,7 +232,7 @@ int cca_send(gnrc_netdev_t *dev, gnrc_pktsnip_t *pkt)
     if (ok) {
         /* device does auto-CCA: let him do its job */
         DEBUG("csma: Network device does auto-CCA checking.\n");
-        return dev->driver->send_data(dev, pktsnip);
+        return dev->driver->send_data(dev, pkt);
     }
 
     /* if we arrive here, we must do CCA ourselves to see if radio medium

@@ -99,7 +99,7 @@ static void *_802154_basic_mac_thread(void *args)
                 DEBUG("802154_basic_mac: TX operation result: %i\n", res);
                 /* send the result of TX to calling thread */  //XXX is that useful, harmful?...
                 reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
-                replay.content.value = (uint32_t) res;
+                reply.content.value = (uint32_t) res;
                 msg_reply(&msg, &reply);
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:

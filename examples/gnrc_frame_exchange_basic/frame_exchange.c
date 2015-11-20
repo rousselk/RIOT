@@ -27,10 +27,13 @@
 #include "net/gnrc.h"
 #include "net/gnrc/pktdump.h"
 #include "timex.h"
+#include "net/ieee802154.h"
+#include "at86rf2xx.h"
 
 
 #define NEW_PACKET_BUF_SIZE   (127)
 
+extern at86rf2xx_t at86rf2xx_dev;
 
 static gnrc_netreg_entry_t server = { /* set by gnrc_netreg_register() */
                                       NULL,
@@ -40,13 +43,13 @@ static gnrc_netreg_entry_t server = { /* set by gnrc_netreg_register() */
                                       /* set by start_server() function below */
                                       KERNEL_PID_UNDEF };
 
-
 /**
  * @brief Command for sending IEEE 802.15.4 frames
  *        on radio medium using basic MAC layer
  */
 int basic_send_cmd(int argc, char **argv)
 {
+    gnrc_netdev_t *dev = (gnrc_netdev_t*) &at86rf2xx_dev;
     /* check the number of arguments */
     if (argc < 3) {
         printf("usage: %s <addr> <data>\n", argv[0]);
@@ -126,7 +129,7 @@ int basic_send_cmd(int argc, char **argv)
     }
 
     /* release slot from packet buffers */
-    gnrc_pktbuf_release(beacon);
+    gnrc_pktbuf_release(pkt);
 
     /* if we arrive here, the packet has been sent */
     return 0;

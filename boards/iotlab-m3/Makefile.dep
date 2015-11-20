@@ -1,4 +1,10 @@
 ifneq (,$(filter gnrc_netif_default,$(USEMODULE)))
   USEMODULE += at86rf231
+  ifeq ($(filter gnrc_802154_basic_mac,$(USEMODULE)),)
   USEMODULE += gnrc_nomac
+  endif
+endif
+ifneq (,$(filter gnrc_802154_basic_mac,$(USEMODULE)))
+    USEMODULE += gnrc_csma_sender
+    USEMODULE += random
 endif

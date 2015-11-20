@@ -25,9 +25,14 @@
 #include "shell.h"
 #include "board.h"
 #include "msg.h"
+#include "panic.h"
 
 #include "at86rf2xx.h"
 #include "at86rf2xx_params.h"
+#include "net/gnrc/ieee_802154_basic_mac.h"
+
+#define ENABLE_DEBUG (0)
+#include "debug.h"
 
 
 #define MAIN_QUEUE_SIZE     (8)
@@ -37,10 +42,10 @@ extern int basic_send_cmd(int argc, char **argv);
 extern void start_frame_rx_server(void);
 
 
-static at86rf2xx_t at86rf2xx_dev;
+at86rf2xx_t at86rf2xx_dev;
 static kernel_pid_t basic_mac_tid;
 
-static char[THREAD_STACKSIZE_DEFAULT] mac_thread_stack;
+static char mac_thread_stack[THREAD_STACKSIZE_DEFAULT];
 
 static const shell_command_t shell_commands[] = {
     { "send_frame", "send IEEE 802.15.4 mac frame", basic_send_cmd },
@@ -57,7 +62,7 @@ int main(void)
     /* I have to start all the network machinery here, since the
        'auto_init_' modules all sytematicaly start "nomac" */
     DEBUG("Initializing AT86RF2xx radio at SPI_0\n");
-    const at86rf2xx_params_t *p = &at86rf2xx_params;
+    const at86rf2xx_params_t *p = &at86rf2xx_params[0];
     int res = at86rf2xx_init(&at86rf2xx_dev,
                              p->spi,
                              p->spi_speed,
